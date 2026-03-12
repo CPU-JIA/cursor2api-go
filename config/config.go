@@ -67,7 +67,7 @@ func LoadConfig() (*Config, error) {
 		// 设置默认值
 		Port:               getEnvAsInt("PORT", 8002),
 		Debug:              getEnvAsBool("DEBUG", false),
-		APIKey:             getEnv("API_KEY", "0000"),
+		APIKey:             getEnv("API_KEY", ""),
 		Models:             getEnv("MODELS", "gpt-4o,claude-3.5-sonnet"),
 		SystemPromptInject: getEnv("SYSTEM_PROMPT_INJECT", ""),
 		Timeout:            getEnvAsInt("TIMEOUT", 60),

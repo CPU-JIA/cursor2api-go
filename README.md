@@ -41,6 +41,7 @@
 #### 方法一：直接运行（推荐用于开发）
 
 **Linux/macOS**:
+
 ```bash
 git clone https://github.com/libaxuan/cursor2api-go.git
 cd cursor2api-go
@@ -49,6 +50,7 @@ chmod +x start.sh
 ```
 
 **Windows**:
+
 ```batch
 # 双击运行或在 cmd 中执行
 start-go.bat
@@ -89,12 +91,14 @@ go run main.go
 ### Docker 部署
 
 1. **构建镜像**:
+
 ```bash
 # 构建镜像
 docker build -t cursor2api-go .
 ```
 
 2. **运行容器**:
+
 ```bash
 # 运行容器（推荐）
 docker run -d \
@@ -112,6 +116,7 @@ docker run -d --name cursor2api-go --restart unless-stopped -p 8002:8002 cursor2
 ### Docker Compose 部署（推荐用于生产环境）
 
 1. **使用 docker-compose.yml**:
+
 ```bash
 # 启动服务
 docker-compose up -d
@@ -124,14 +129,19 @@ docker-compose logs -f
 ```
 
 2. **自定义配置**:
-修改 `docker-compose.yml` 文件中的环境变量以满足您的需求：
+   修改 `docker-compose.yml` 文件中的环境变量以满足您的需求：
+
 - 修改 `API_KEY` 为安全的密钥
 - 根据需要调整 `MODELS`、`TIMEOUT` 等配置
 - 更改暴露的端口
 
+> 安全说明：CORS 允许任意 Origin，但不再允许携带凭据（Access-Control-Allow-Credentials 已禁用）。
+> 内置请求限流：默认 60 req/min/IP，可通过 `RATE_LIMIT_RPM` 覆盖。
+
 ### 系统服务部署（Linux）
 
 1. **编译并移动二进制文件**:
+
 ```bash
 go build -o cursor2api-go
 sudo mv cursor2api-go /usr/local/bin/
@@ -139,6 +149,7 @@ sudo chmod +x /usr/local/bin/cursor2api-go
 ```
 
 2. **创建系统服务文件** `/etc/systemd/system/cursor2api-go.service`:
+
 ```ini
 [Unit]
 Description=Cursor2API Service
@@ -158,6 +169,7 @@ WantedBy=multi-user.target
 ```
 
 3. **启动服务**:
+
 ```bash
 # 重载 systemd 配置
 sudo systemctl daemon-reload
@@ -177,7 +189,7 @@ sudo systemctl status cursor2api-go
 ### 获取模型列表
 
 ```bash
-curl -H "Authorization: Bearer 0000" http://localhost:8002/v1/models
+curl -H "Authorization: Bearer <your-api-key>" http://localhost:8002/v1/models
 ```
 
 ### 非流式聊天
@@ -185,7 +197,7 @@ curl -H "Authorization: Bearer 0000" http://localhost:8002/v1/models
 ```bash
 curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 0000" \
+  -H "Authorization: Bearer <your-api-key>" \
   -d '{
     "model": "claude-sonnet-4.6",
     "messages": [{"role": "user", "content": "Hello!"}],
@@ -198,7 +210,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
 ```bash
 curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 0000" \
+  -H "Authorization: Bearer <your-api-key>" \
   -d '{
     "model": "claude-sonnet-4.6",
     "messages": [{"role": "user", "content": "Hello!"}],
@@ -211,36 +223,41 @@ curl -X POST http://localhost:8002/v1/chat/completions \
 在任何支持自定义 OpenAI API 的应用中（如 ChatGPT Next Web、Lobe Chat 等）：
 
 1. **API 地址**: `http://localhost:8002`
-2. **API 密钥**: `0000`（或自定义）
+2. **API 密钥**: 必须设置为你配置的 `API_KEY`
 3. **模型**: 选择支持的模型之一
 
 ## ⚙️ 配置说明
 
 ### 环境变量
 
-| 变量名 | 默认值 | 说明 |
-|--------|--------|------|
-| `PORT` | `8002` | 服务器端口 |
-| `DEBUG` | `false` | 调试模式（启用后显示详细日志和路由信息） |
-| `API_KEY` | `0000` | API 认证密钥 |
-| `MODELS` | `claude-sonnet-4.6` | 支持的模型列表（逗号分隔） |
-| `TIMEOUT` | `60` | 请求超时时间（秒） |
+| 变量名             | 默认值              | 说明                                     |
+| ------------------ | ------------------- | ---------------------------------------- |
+| `PORT`             | `8002`              | 服务器端口                               |
+| `DEBUG`            | `false`             | 调试模式（启用后显示详细日志和路由信息） |
+| `API_KEY`          | （必填）            | API 认证密钥（必须显式设置）             |
+| `MODELS`           | `claude-sonnet-4.6` | 支持的模型列表（逗号分隔）               |
+| `TIMEOUT`          | `60`                | 请求超时时间（秒）                       |
+| `RATE_LIMIT_RPM`   | `60`                | 每 IP 每分钟请求数限制                   |
+| `RUNJS_TIMEOUT_MS` | `5000`              | RunJS 执行超时（毫秒）                   |
 
 ### 调试模式
 
 默认情况下，服务以简洁模式运行。如需启用详细日志：
 
 **方式 1**: 修改 `.env` 文件
+
 ```bash
 DEBUG=true
 ```
 
 **方式 2**: 使用环境变量
+
 ```bash
 DEBUG=true ./cursor2api-go
 ```
 
 调试模式会显示：
+
 - 详细的 GIN 路由信息
 - 每个请求的详细日志
 - x-is-human token 信息
@@ -249,11 +266,11 @@ DEBUG=true ./cursor2api-go
 ### 故障排除
 
 遇到问题？查看 **[故障排除指南](TROUBLESHOOTING.md)** 了解常见问题的解决方案，包括：
+
 - 403 Access Denied 错误
 - Token 获取失败
 - 连接超时
 - Cloudflare 拦截
-
 
 ### Windows 启动脚本说明
 

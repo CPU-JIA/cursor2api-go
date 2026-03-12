@@ -115,7 +115,7 @@ func (s *CursorService) ChatCompletion(ctx context.Context, request *models.Chat
 		headers := s.chatHeaders(xIsHuman)
 		logrus.WithFields(logrus.Fields{
 			"url":            cursorAPIURL,
-			"x-is-human":     xIsHuman[:50] + "...", // 只显示前50个字符
+			"token_length":   len(xIsHuman),
 			"payload_length": len(jsonPayload),
 			"model":          request.Model,
 			"attempt":        attempt,
@@ -137,8 +137,11 @@ func (s *CursorService) ChatCompletion(ctx context.Context, request *models.Chat
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(resp.Response.Body)
+			body, readErr := io.ReadAll(resp.Response.Body)
 			resp.Response.Body.Close()
+			if readErr != nil {
+				return nil, fmt.Errorf("failed to read cursor response body: %w", readErr)
+			}
 			message := strings.TrimSpace(string(body))
 
 			// 记录详细的错误信息
@@ -338,10 +341,21 @@ func (s *CursorService) truncateMessages(messages []models.Message) []models.Mes
 	collected := make([]models.Message, 0, len(messages)-startIdx)
 	for i := len(messages) - 1; i >= startIdx; i-- {
 		msg := messages[i]
-		msgLen := len(msg.GetStringContent())
+		content := msg.GetStringContent()
+		msgLen := len(content)
 		if msgLen == 0 {
 			continue
 		}
+
+		if msgLen > maxLength {
+			if len(collected) == 0 {
+				msg.Content = content[:maxLength]
+				collected = append(collected, msg)
+				current = maxLength
+			}
+			continue
+		}
+
 		if current+msgLen > maxLength {
 			continue
 		}

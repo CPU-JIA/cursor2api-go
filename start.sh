@@ -60,6 +60,33 @@ check_nodejs() {
     echo -e "${GREEN}✅ Node.js 版本检查通过: $NODE_VERSION${NC}"
 }
 
+generate_api_key() {
+    node -e "console.log('sk-' + require('crypto').randomBytes(24).toString('hex'))"
+}
+
+update_env_value() {
+    local key=$1
+    local value=$2
+
+    if grep -q "^${key}=" .env; then
+        awk -v k="$key" -v v="$value" '$0 ~ "^"k"=" {print k"="v; next} {print}' .env > .env.tmp && mv .env.tmp .env
+    else
+        echo "${key}=${value}" >> .env
+    fi
+}
+
+ensure_api_key() {
+    local current_key
+    current_key=$(grep -E '^API_KEY=' .env | tail -n1 | cut -d= -f2-)
+
+    if [ -z "$current_key" ] || [ "$current_key" = "0000" ]; then
+        local new_key
+        new_key=$(generate_api_key)
+        update_env_value "API_KEY" "$new_key"
+        echo -e "${GREEN}🔐 已生成 API_KEY: $new_key${NC}"
+    fi
+}
+
 # 处理环境配置
 setup_env() {
     if [ ! -f .env ]; then
@@ -70,7 +97,7 @@ PORT=8002
 DEBUG=false
 
 # API配置
-API_KEY=0000
+API_KEY=
 MODELS=gpt-5.1,gpt-5,gpt-5-codex,gpt-5-mini,gpt-5-nano,gpt-4.1,gpt-4o,claude-3.5-sonnet,claude-3.5-haiku,claude-3.7-sonnet,claude-4-sonnet,claude-4.5-sonnet,claude-4-opus,claude-4.1-opus,gemini-2.5-pro,gemini-2.5-flash,gemini-3.0-pro,o3,o4-mini,deepseek-r1,deepseek-v3.1,kimi-k2-instruct,grok-3
 SYSTEM_PROMPT_INJECT=
 
@@ -85,6 +112,8 @@ EOF
     else
         echo -e "${GREEN}✅ 配置文件 .env 已存在${NC}"
     fi
+
+    ensure_api_key
 }
 
 # 构建应用

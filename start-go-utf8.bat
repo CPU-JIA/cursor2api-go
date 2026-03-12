@@ -73,7 +73,7 @@ if not exist .env (
         echo DEBUG=false
         echo.
         echo # API配置
-        echo API_KEY=0000
+        echo API_KEY=
         echo MODELS=gpt-5.1,gpt-5,gpt-5-codex,gpt-5-mini,gpt-5-nano,gpt-4.1,gpt-4o,claude-3.5-sonnet,claude-3.5-haiku,claude-3.7-sonnet,claude-4-sonnet,claude-4.5-sonnet,claude-4-opus,claude-4.1-opus,gemini-2.5-pro,gemini-2.5-flash,gemini-3.0-pro,o3,o4-mini,deepseek-r1,deepseek-v3.1,kimi-k2-instruct,grok-3
         echo SYSTEM_PROMPT_INJECT=
         echo.
@@ -88,6 +88,32 @@ if not exist .env (
 ) else (
     echo ✅ 配置文件 .env 已存在
 )
+
+:: 生成随机 API_KEY（sk- 前缀）
+for /f %%i in ('node -e "console.log('sk-' + require('crypto').randomBytes(24).toString('hex'))"') do set "NEW_API_KEY=%%i"
+
+:: 设置/更新 .env 的 API_KEY
+set "ENV_FILE=.env"
+set "FOUND_API_KEY=0"
+(
+  for /f "usebackq delims=" %%l in ("%ENV_FILE%") do (
+    set "LINE=%%l"
+    setlocal enabledelayedexpansion
+    if "!LINE!"=="" (
+      echo.
+    ) else if "!LINE:~0,8!"=="API_KEY=" (
+      set "FOUND_API_KEY=1"
+      echo API_KEY=%NEW_API_KEY%
+    ) else (
+      echo !LINE!
+    )
+    endlocal
+  )
+  if "%FOUND_API_KEY%"=="0" echo API_KEY=%NEW_API_KEY%
+) > .env.tmp
+move /y .env.tmp .env >nul
+
+echo 🔐 已生成 API_KEY: %NEW_API_KEY%
 
 :: 下载依赖
 echo.

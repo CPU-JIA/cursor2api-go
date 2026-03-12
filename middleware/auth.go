@@ -33,7 +33,7 @@ import (
 func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		
+
 		if authHeader == "" {
 			errorResponse := models.NewErrorResponse(
 				"Missing authorization header",
@@ -59,7 +59,14 @@ func AuthRequired() gin.HandlerFunc {
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		expectedToken := os.Getenv("API_KEY")
 		if expectedToken == "" {
-			expectedToken = "0000" // 默认值
+			errorResponse := models.NewErrorResponse(
+				"API_KEY is not configured",
+				"authentication_error",
+				"api_key_missing",
+			)
+			c.JSON(http.StatusInternalServerError, errorResponse)
+			c.Abort()
+			return
 		}
 
 		if token != expectedToken {

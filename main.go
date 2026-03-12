@@ -36,13 +36,14 @@ func main() {
 
 	// 禁用 Gin 的调试信息输出
 	gin.DisableConsoleColor()
-	
+
 	// 创建路由器（使用 gin.New() 而不是 gin.Default() 以避免默认日志）
 	router := gin.New()
 
 	// 添加中间件
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS())
+	router.Use(middleware.RateLimit())
 	router.Use(middleware.ErrorHandler())
 	// 只在 Debug 模式下启用 GIN 的日志
 	if cfg.Debug {

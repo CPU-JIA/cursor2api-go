@@ -51,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:8002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
 
 # 启动应用
-CMD ["./cursor2api-go"]
+CMD ["sh", "-c", "if [ -z \"$API_KEY\" ] || [ \"$API_KEY\" = \"0000\" ]; then API_KEY=$(node -e 'console.log(\"sk-\" + require(\"crypto\").randomBytes(24).toString(\"hex\"))'); export API_KEY; echo \"Generated API_KEY: $API_KEY\"; fi; exec ./cursor2api-go"]

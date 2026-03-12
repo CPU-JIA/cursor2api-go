@@ -22,6 +22,7 @@ package models
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -182,26 +183,26 @@ func (m *Message) GetStringContent() string {
 	case string:
 		return content
 	case []ContentPart:
-		var text string
+		var builder strings.Builder
 		for _, part := range content {
 			if part.Type == "text" {
-				text += part.Text
+				builder.WriteString(part.Text)
 			}
 		}
-		return text
+		return builder.String()
 	case []interface{}:
 		// 处理混合类型内容
-		var text string
+		var builder strings.Builder
 		for _, item := range content {
 			if part, ok := item.(map[string]interface{}); ok {
 				if partType, exists := part["type"].(string); exists && partType == "text" {
 					if textContent, exists := part["text"].(string); exists {
-						text += textContent
+						builder.WriteString(textContent)
 					}
 				}
 			}
 		}
-		return text
+		return builder.String()
 	default:
 		// 尝试将其他类型转换为JSON字符串
 		if data, err := json.Marshal(content); err == nil {

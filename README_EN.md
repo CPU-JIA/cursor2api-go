@@ -32,6 +32,7 @@ A Go service that converts Cursor Web to a basic OpenAI chat completions compati
 #### Method 1: Direct Run (Recommended for development)
 
 **Linux/macOS**:
+
 ```bash
 git clone https://github.com/libaxuan/cursor2api-go.git
 cd cursor2api-go
@@ -40,6 +41,7 @@ chmod +x start.sh
 ```
 
 **Windows**:
+
 ```batch
 # Double-click or run in cmd
 start-go.bat
@@ -80,12 +82,14 @@ The service will start at `http://localhost:8002`
 ### Docker Deployment
 
 1. **Build Image**:
+
 ```bash
 # Build image
 docker build -t cursor2api-go .
 ```
 
 2. **Run Container**:
+
 ```bash
 # Run container (recommended)
 docker run -d \
@@ -103,6 +107,7 @@ docker run -d --name cursor2api-go --restart unless-stopped -p 8002:8002 cursor2
 ### Docker Compose Deployment (Recommended for production)
 
 1. **Using docker-compose.yml**:
+
 ```bash
 # Start service
 docker-compose up -d
@@ -115,14 +120,19 @@ docker-compose logs -f
 ```
 
 2. **Custom Configuration**:
-Modify the environment variables in the `docker-compose.yml` file to meet your needs:
+   Modify the environment variables in the `docker-compose.yml` file to meet your needs:
+
 - Change `API_KEY` to a secure key
 - Adjust `MODELS`, `TIMEOUT`, and other configurations as needed
 - Change the exposed port
 
+> Security note: CORS allows any origin but credentials are disabled.
+> Built-in rate limiting: default 60 req/min/IP, override with `RATE_LIMIT_RPM`.
+
 ### System Service Deployment (Linux)
 
 1. **Compile and Move Binary**:
+
 ```bash
 go build -o cursor2api-go
 sudo mv cursor2api-go /usr/local/bin/
@@ -130,6 +140,7 @@ sudo chmod +x /usr/local/bin/cursor2api-go
 ```
 
 2. **Create System Service File** `/etc/systemd/system/cursor2api-go.service`:
+
 ```ini
 [Unit]
 Description=Cursor2API Service
@@ -149,6 +160,7 @@ WantedBy=multi-user.target
 ```
 
 3. **Start Service**:
+
 ```bash
 # Reload systemd configuration
 sudo systemctl daemon-reload
@@ -168,7 +180,7 @@ sudo systemctl status cursor2api-go
 ### List Models
 
 ```bash
-curl -H "Authorization: Bearer 0000" http://localhost:8002/v1/models
+curl -H "Authorization: Bearer <your-api-key>" http://localhost:8002/v1/models
 ```
 
 ### Non-Streaming Chat
@@ -176,7 +188,7 @@ curl -H "Authorization: Bearer 0000" http://localhost:8002/v1/models
 ```bash
 curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 0000" \
+  -H "Authorization: Bearer <your-api-key>" \
   -d '{
     "model": "claude-sonnet-4.6",
     "messages": [{"role": "user", "content": "Hello!"}],
@@ -189,7 +201,7 @@ curl -X POST http://localhost:8002/v1/chat/completions \
 ```bash
 curl -X POST http://localhost:8002/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 0000" \
+  -H "Authorization: Bearer <your-api-key>" \
   -d '{
     "model": "claude-sonnet-4.6",
     "messages": [{"role": "user", "content": "Hello!"}],
@@ -202,36 +214,41 @@ curl -X POST http://localhost:8002/v1/chat/completions \
 In any app that supports custom OpenAI API (e.g., ChatGPT Next Web, Lobe Chat):
 
 1. **API URL**: `http://localhost:8002`
-2. **API Key**: `0000` (or custom)
+2. **API Key**: Must be set to your configured `API_KEY`
 3. **Model**: Choose from supported models
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `8002` | Server port |
-| `DEBUG` | `false` | Debug mode (shows detailed logs and route info when enabled) |
-| `API_KEY` | `0000` | API authentication key |
-| `MODELS` | `claude-sonnet-4.6` | Supported models (comma-separated) |
-| `TIMEOUT` | `60` | Request timeout (seconds) |
+| Variable           | Default             | Description                                                  |
+| ------------------ | ------------------- | ------------------------------------------------------------ |
+| `PORT`             | `8002`              | Server port                                                  |
+| `DEBUG`            | `false`             | Debug mode (shows detailed logs and route info when enabled) |
+| `API_KEY`          | (required)          | API authentication key (must be explicitly set)              |
+| `MODELS`           | `claude-sonnet-4.6` | Supported models (comma-separated)                           |
+| `TIMEOUT`          | `60`                | Request timeout (seconds)                                    |
+| `RATE_LIMIT_RPM`   | `60`                | Requests per minute per IP                                   |
+| `RUNJS_TIMEOUT_MS` | `5000`              | RunJS execution timeout (ms)                                 |
 
 ### Debug Mode
 
 By default, the service runs in clean mode. To enable detailed logging:
 
 **Option 1**: Modify `.env` file
+
 ```bash
 DEBUG=true
 ```
 
 **Option 2**: Use environment variable
+
 ```bash
 DEBUG=true ./cursor2api-go
 ```
 
 Debug mode displays:
+
 - Detailed GIN route information
 - Verbose request logs
 - x-is-human token details
@@ -240,11 +257,11 @@ Debug mode displays:
 ### Troubleshooting
 
 Having issues? Check the **[Troubleshooting Guide](TROUBLESHOOTING.md)** for solutions to common problems, including:
+
 - 403 Access Denied errors
 - Token fetch failures
 - Connection timeouts
 - Cloudflare blocking
-
 
 ### Windows Startup Scripts
 

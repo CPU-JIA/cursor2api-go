@@ -31,7 +31,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -407,14 +409,21 @@ window.crypto = crypto;
 this.crypto = crypto;
 ` + jsCode
 
+	timeout := getRunJSTimeout()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	// 执行Node.js命令，使用stdin输入代码
-	cmd := exec.Command("node")
+	cmd := exec.CommandContext(ctx, "node")
 
 	// 设置输入
 	cmd.Stdin = strings.NewReader(finalJS)
 
 	output, err := cmd.Output()
 	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("node.js execution timed out after %s", timeout)
+		}
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return "", fmt.Errorf("node.js execution failed (exit code: %d)\nSTDOUT:\n%s\nSTDERR:\n%s",
 				exitErr.ExitCode(), string(output), string(exitErr.Stderr))
@@ -423,4 +432,19 @@ this.crypto = crypto;
 	}
 
 	return strings.TrimSpace(string(output)), nil
+}
+
+func getRunJSTimeout() time.Duration {
+	value := strings.TrimSpace(os.Getenv("RUNJS_TIMEOUT_MS"))
+	if value == "" {
+		return 5 * time.Second
+	}
+
+	ms, err := strconv.Atoi(value)
+	if err != nil || ms <= 0 {
+		logrus.Warnf("Invalid RUNJS_TIMEOUT_MS value: %s, using default: %d", value, 5000)
+		return 5 * time.Second
+	}
+
+	return time.Duration(ms) * time.Millisecond
 }
